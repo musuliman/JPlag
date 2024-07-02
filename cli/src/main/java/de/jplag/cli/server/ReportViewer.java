@@ -29,6 +29,8 @@ public class ReportViewer implements HttpHandler {
     private static final int NOT_FOUND_RESPONSE = 404;
     private static final int MAX_PORT_LOOKUPS = 4;
 
+    private static final String IP_ADDRESS = "0.0.0.0";
+
     private final RoutingTree routingTree;
     private final int port;
 
@@ -64,7 +66,7 @@ public class ReportViewer implements HttpHandler {
         BindException lastException = new BindException("Could not create server. Probably due to no free port found.");
         while (server == null && remainingLookups-- > 0) {
             try {
-                server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), currentPort), 0);
+                server = HttpServer.create(new InetSocketAddress(IP_ADDRESS, currentPort), 0);
             } catch (BindException e) {
                 logger.info("Port {} is not available. Trying to find a different one.", currentPort);
                 lastException = e;
