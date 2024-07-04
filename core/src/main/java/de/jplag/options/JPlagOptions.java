@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import lombok.Builder;
+import lombok.With;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,35 +30,45 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * This record defines the options to configure {@link JPlag}.
- * @param language Language to use when parsing the submissions.
- * @param minimumTokenMatch Tunes the comparison sensitivity by adjusting the minimum token required to be counted as
- * matching section. A smaller {@code <n>} increases the sensitivity but might lead to more false-positives.
- * @param submissionDirectories Directories with new submissions. These must be checked for plagiarism.
- * @param oldSubmissionDirectories Directories with old submissions to check against.
+ *
+ * @param language                    Language to use when parsing the submissions.
+ * @param minimumTokenMatch           Tunes the comparison sensitivity by adjusting the minimum token required to be counted as
+ *                                    matching section. A smaller {@code <n>} increases the sensitivity but might lead to more false-positives.
+ * @param submissionDirectories       Directories with new submissions. These must be checked for plagiarism.
+ * @param oldSubmissionDirectories    Directories with old submissions to check against.
  * @param baseCodeSubmissionDirectory Directory containing the base code.
- * @param subdirectoryName Example: If the subdirectoryName is 'src', only the code inside submissionDir/src of each
- * submission will be used for comparison.
- * @param fileSuffixes List of file suffixes that should be included.
- * @param exclusionFileName Name of the file that contains the names of files to exclude from comparison.
- * @param similarityMetric The similarity metric determines how the minimum similarity threshold required for a
- * comparison (of two submissions) is calculated. This affects which comparisons are stored and thus make it into the
- * result object.
- * @param similarityThreshold Similarity value (must be between 0 and 1). Comparisons (of submissions pairs) with a
- * similarity below this threshold will be ignored. The default value of 0 allows all matches to be stored. This affects
- * which comparisons are stored and thus make it into the result object. See also {@link #similarityMetric()}.
- * @param maximumNumberOfComparisons The maximum number of comparisons that will be shown in the generated report. If
- * set to {@link #SHOW_ALL_COMPARISONS} all comparisons will be shown.
- * @param clusteringOptions Clustering options
- * @param debugParser If true, submissions that cannot be parsed will be stored in a separate directory.
+ * @param subdirectoryName            Example: If the subdirectoryName is 'src', only the code inside submissionDir/src of each
+ *                                    submission will be used for comparison.
+ * @param fileSuffixes                List of file suffixes that should be included.
+ * @param exclusionFileName           Name of the file that contains the names of files to exclude from comparison.
+ * @param similarityMetric            The similarity metric determines how the minimum similarity threshold required for a
+ *                                    comparison (of two submissions) is calculated. This affects which comparisons are stored and thus make it into the
+ *                                    result object.
+ * @param similarityThreshold         Similarity value (must be between 0 and 1). Comparisons (of submissions pairs) with a
+ *                                    similarity below this threshold will be ignored. The default value of 0 allows all matches to be stored. This affects
+ *                                    which comparisons are stored and thus make it into the result object. See also {@link #similarityMetric()}.
+ * @param maximumNumberOfComparisons  The maximum number of comparisons that will be shown in the generated report. If
+ *                                    set to {@link #SHOW_ALL_COMPARISONS} all comparisons will be shown.
+ * @param clusteringOptions           Clustering options
+ * @param debugParser                 If true, submissions that cannot be parsed will be stored in a separate directory.
  */
-public record JPlagOptions(@JsonSerialize(using = LanguageSerializer.class) Language language,
-        @JsonProperty("min_token_match") Integer minimumTokenMatch, @JsonProperty("submission_directories") Set<File> submissionDirectories,
-        @JsonProperty("old_directories") Set<File> oldSubmissionDirectories, @JsonProperty("base_directory") File baseCodeSubmissionDirectory,
-        @JsonProperty("subdirectory_name") String subdirectoryName, @JsonProperty("file_suffixes") List<String> fileSuffixes,
-        @JsonProperty("exclusion_file_name") String exclusionFileName, @JsonProperty("similarity_metric") SimilarityMetric similarityMetric,
-        @JsonProperty("similarity_threshold") double similarityThreshold, @JsonProperty("max_comparisons") int maximumNumberOfComparisons,
-        @JsonProperty("cluster") ClusteringOptions clusteringOptions, boolean debugParser, @JsonProperty("merging") MergingOptions mergingOptions,
-        @JsonProperty("normalize") boolean normalize) {
+@Builder
+public record JPlagOptions(
+        @With @JsonSerialize(using = LanguageSerializer.class) Language language,
+        @With @JsonProperty("min_token_match") Integer minimumTokenMatch,
+        @With @JsonProperty("submission_directories") Set<File> submissionDirectories,
+        @With @JsonProperty("old_directories") Set<File> oldSubmissionDirectories,
+        @With @JsonProperty("base_directory") File baseCodeSubmissionDirectory,
+        @With @JsonProperty("subdirectory_name") String subdirectoryName,
+        @With @JsonProperty("file_suffixes") List<String> fileSuffixes,
+        @With @JsonProperty("exclusion_file_name") String exclusionFileName,
+        @With @JsonProperty("similarity_metric") SimilarityMetric similarityMetric,
+        @With @JsonProperty("similarity_threshold") double similarityThreshold,
+        @With @JsonProperty("max_comparisons") int maximumNumberOfComparisons,
+        @With @JsonProperty("cluster") ClusteringOptions clusteringOptions,
+        @With boolean debugParser,
+        @With @JsonProperty("merging") MergingOptions mergingOptions,
+        @With @JsonProperty("normalize") boolean normalize) {
 
     public static final double DEFAULT_SIMILARITY_THRESHOLD = 0;
     public static final int DEFAULT_SHOWN_COMPARISONS = 500;
@@ -73,9 +85,9 @@ public record JPlagOptions(@JsonSerialize(using = LanguageSerializer.class) Lang
     }
 
     public JPlagOptions(Language language, Integer minimumTokenMatch, Set<File> submissionDirectories, Set<File> oldSubmissionDirectories,
-            File baseCodeSubmissionDirectory, String subdirectoryName, List<String> fileSuffixes, String exclusionFileName,
-            SimilarityMetric similarityMetric, double similarityThreshold, int maximumNumberOfComparisons, ClusteringOptions clusteringOptions,
-            boolean debugParser, MergingOptions mergingOptions, boolean normalize) {
+                        File baseCodeSubmissionDirectory, String subdirectoryName, List<String> fileSuffixes, String exclusionFileName,
+                        SimilarityMetric similarityMetric, double similarityThreshold, int maximumNumberOfComparisons, ClusteringOptions clusteringOptions,
+                        boolean debugParser, MergingOptions mergingOptions, boolean normalize) {
         this.language = language;
         this.debugParser = debugParser;
         this.fileSuffixes = fileSuffixes == null || fileSuffixes.isEmpty() ? null : Collections.unmodifiableList(fileSuffixes);
@@ -94,93 +106,7 @@ public record JPlagOptions(@JsonSerialize(using = LanguageSerializer.class) Lang
     }
 
     public JPlagOptions withLanguageOption(Language language) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withDebugParser(boolean debugParser) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withFileSuffixes(List<String> fileSuffixes) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withSimilarityThreshold(double similarityThreshold) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withMaximumNumberOfComparisons(int maximumNumberOfComparisons) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withSimilarityMetric(SimilarityMetric similarityMetric) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withMinimumTokenMatch(Integer minimumTokenMatch) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withExclusionFileName(String exclusionFileName) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withSubmissionDirectories(Set<File> submissionDirectories) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withOldSubmissionDirectories(Set<File> oldSubmissionDirectories) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withBaseCodeSubmissionDirectory(File baseCodeSubmissionDirectory) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withSubdirectoryName(String subdirectoryName) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withClusteringOptions(ClusteringOptions clusteringOptions) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withMergingOptions(MergingOptions mergingOptions) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
-    }
-
-    public JPlagOptions withNormalize(boolean normalize) {
-        return new JPlagOptions(language, minimumTokenMatch, submissionDirectories, oldSubmissionDirectories, baseCodeSubmissionDirectory,
-                subdirectoryName, fileSuffixes, exclusionFileName, similarityMetric, similarityThreshold, maximumNumberOfComparisons,
-                clusteringOptions, debugParser, mergingOptions, normalize);
+        return this.withLanguage(language);
     }
 
     public boolean hasBaseCode() {
@@ -244,34 +170,35 @@ public record JPlagOptions(@JsonSerialize(using = LanguageSerializer.class) Lang
 
     /**
      * Creates new options to configure {@link JPlag}.
-     * @param language Language to use when parsing the submissions.
-     * @param minimumTokenMatch Tunes the comparison sensitivity by adjusting the minimum token required to be counted as
-     * matching section. A smaller {@code <n>} increases the sensitivity but might lead to more false-positives.
-     * @param submissionDirectory Directory with new submissions. These must be checked for plagiarism. To check more than
-     * one submission directory, use the default initializer.
-     * @param oldSubmissionDirectories Directories with old submissions to check against.
-     * @param baseCodeSubmissionName Path name of the directory containing the base code.
-     * @param subdirectoryName Example: If the subdirectoryName is 'src', only the code inside submissionDir/src of each
-     * submission will be used for comparison.
-     * @param fileSuffixes List of file suffixes that should be included.
-     * @param exclusionFileName Name of the file that contains the names of files to exclude from comparison.
-     * @param similarityMetric The similarity metric determines how the minimum similarity threshold required for a
-     * comparison (of two submissions) is calculated. This affects which comparisons are stored and thus make it into the
-     * result object.
-     * @param similarityThreshold Percentage value (must be between 0 and 100). Comparisons (of submissions pairs) with a
-     * similarity below this threshold will be ignored. The default value of 0 allows all matches to be stored. This affects
-     * which comparisons are stored and thus make it into the result object. See also {@link #similarityMetric()}.
+     *
+     * @param language                   Language to use when parsing the submissions.
+     * @param minimumTokenMatch          Tunes the comparison sensitivity by adjusting the minimum token required to be counted as
+     *                                   matching section. A smaller {@code <n>} increases the sensitivity but might lead to more false-positives.
+     * @param submissionDirectory        Directory with new submissions. These must be checked for plagiarism. To check more than
+     *                                   one submission directory, use the default initializer.
+     * @param oldSubmissionDirectories   Directories with old submissions to check against.
+     * @param baseCodeSubmissionName     Path name of the directory containing the base code.
+     * @param subdirectoryName           Example: If the subdirectoryName is 'src', only the code inside submissionDir/src of each
+     *                                   submission will be used for comparison.
+     * @param fileSuffixes               List of file suffixes that should be included.
+     * @param exclusionFileName          Name of the file that contains the names of files to exclude from comparison.
+     * @param similarityMetric           The similarity metric determines how the minimum similarity threshold required for a
+     *                                   comparison (of two submissions) is calculated. This affects which comparisons are stored and thus make it into the
+     *                                   result object.
+     * @param similarityThreshold        Percentage value (must be between 0 and 100). Comparisons (of submissions pairs) with a
+     *                                   similarity below this threshold will be ignored. The default value of 0 allows all matches to be stored. This affects
+     *                                   which comparisons are stored and thus make it into the result object. See also {@link #similarityMetric()}.
      * @param maximumNumberOfComparisons The maximum number of comparisons that will be shown in the generated report. If
-     * set to {@link #SHOW_ALL_COMPARISONS} all comparisons will be shown.
-     * @param clusteringOptions Clustering options
-     * @param debugParser If true, submissions that cannot be parsed will be stored in a separate directory.
+     *                                   set to {@link #SHOW_ALL_COMPARISONS} all comparisons will be shown.
+     * @param clusteringOptions          Clustering options
+     * @param debugParser                If true, submissions that cannot be parsed will be stored in a separate directory.
      * @deprecated Use the default initializer with @{{@link #baseCodeSubmissionDirectory} instead.
      */
     @Deprecated(since = "4.0.0", forRemoval = true)
     public JPlagOptions(Language language, Integer minimumTokenMatch, File submissionDirectory, Set<File> oldSubmissionDirectories,
-            String baseCodeSubmissionName, String subdirectoryName, List<String> fileSuffixes, String exclusionFileName,
-            SimilarityMetric similarityMetric, double similarityThreshold, int maximumNumberOfComparisons, ClusteringOptions clusteringOptions,
-            boolean debugParser, MergingOptions mergingOptions) throws BasecodeException {
+                        String baseCodeSubmissionName, String subdirectoryName, List<String> fileSuffixes, String exclusionFileName,
+                        SimilarityMetric similarityMetric, double similarityThreshold, int maximumNumberOfComparisons, ClusteringOptions clusteringOptions,
+                        boolean debugParser, MergingOptions mergingOptions) throws BasecodeException {
         this(language, minimumTokenMatch, Set.of(submissionDirectory), oldSubmissionDirectories,
                 convertLegacyBaseCodeToFile(baseCodeSubmissionName, submissionDirectory), subdirectoryName, fileSuffixes, exclusionFileName,
                 similarityMetric, similarityThreshold, maximumNumberOfComparisons, clusteringOptions, debugParser, mergingOptions, false);
@@ -279,6 +206,7 @@ public record JPlagOptions(@JsonSerialize(using = LanguageSerializer.class) Lang
 
     /**
      * Creates a new options instance with the provided base code submission name
+     *
      * @param baseCodeSubmissionName the path or name of the base code submission
      * @return a new options instance with the provided base code submission name
      * @deprecated Use @{{@link #withBaseCodeSubmissionDirectory} instead.
@@ -305,6 +233,7 @@ public record JPlagOptions(@JsonSerialize(using = LanguageSerializer.class) Lang
 
     /**
      * Converts a legacy base code submission name to a directory path.
+     *
      * @deprecated Use the default initializer with @{{@link #baseCodeSubmissionDirectory} instead.
      */
     @Deprecated(since = "4.0.0", forRemoval = true)
