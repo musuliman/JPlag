@@ -15,7 +15,7 @@
       <div class="flex min-h-0 flex-grow justify-center">
         <Radar :data="chartData" :options="radarChartOptions" />
       </div>
-      <div class="text-xs font-bold text-gray-500 dark:text-gray-400">
+      <div class="text-xs font-bold text-gray-500 dark:text-gray-400 print:hidden">
         <p>
           This Chart shows the average similarity of the selected submission to the other
           submissions in the cluster. <br />
@@ -132,7 +132,7 @@ const radarChartOptions = computed(() => {
   }
 })
 
-const chartData: Ref<ChartData<'radar', (number | null)[], unknown>> = computed(() => {
+const chartData: Ref<ChartData<'radar', (number | null)[]>> = computed(() => {
   return {
     labels: labels.value,
     datasets: [

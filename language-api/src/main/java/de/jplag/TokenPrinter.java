@@ -193,7 +193,7 @@ public final class TokenPrinter {
     /**
      * A proxy for the StringBuilder that keeps track of the position inside the output.
      */
-    private static class PrinterOutputBuilder {
+    private static final class PrinterOutputBuilder {
         public static final String LINE_SEPARATOR = System.lineSeparator();
         private final StringBuilder builder = new StringBuilder();
         private int columnIndex = 1;
@@ -224,8 +224,9 @@ public final class TokenPrinter {
         public PrinterOutputBuilder append(String str) {
             // Avoid too many blank lines
             trailingLineSeparators = str.equals(LINE_SEPARATOR) ? trailingLineSeparators + 1 : 0;
-            if (trailingLineSeparators >= 3)
+            if (trailingLineSeparators >= 3) {
                 return this;
+            }
 
             builder.append(str);
             columnIndex += str.length();

@@ -2,7 +2,11 @@ package de.jplag.antlr;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.antlr.v4.runtime.Token;
 import org.slf4j.Logger;
@@ -21,8 +25,8 @@ public abstract class AbstractVisitor<T> {
 
     private final Predicate<T> condition;
     private final List<Consumer<HandlerData<T>>> entryHandlers;
-    private TokenType entryTokenType;
     private Function<T, CodeSemantics> entrySemantics;
+    protected TokenType entryTokenType;
 
     /**
      * @param condition The condition for the visit.
@@ -114,15 +118,24 @@ public abstract class AbstractVisitor<T> {
      * Enter a given entity, injecting the needed dependencies.
      */
     void enter(HandlerData<T> data) {
+        handleEnter(data, this::extractEnterToken, this::extractEnterToken);
+    }
+
+    protected void handleEnter(HandlerData<T> data, Function<T, Token> extractStartToken, Function<T, Token> extractEndToken) {
         if (entryTokenType == null && entrySemantics != null) {
             logger.warn("Received semantics, but no token type, so no token was generated and the semantics discarded");
         }
-        addToken(data, entryTokenType, entrySemantics, this::extractEnterToken);  // addToken takes null token types
+        addToken(data, entryTokenType, entrySemantics, extractStartToken, extractEndToken);  // addToken takes null token types
         entryHandlers.forEach(handler -> handler.accept(data));
     }
 
     void addToken(HandlerData<T> data, TokenType tokenType, Function<T, CodeSemantics> semantics, Function<T, Token> extractToken) {
-        data.collector().addToken(tokenType, semantics, data.entity(), extractToken, data.variableRegistry());
+        addToken(data, tokenType, semantics, extractToken, extractToken);
+    }
+
+    void addToken(HandlerData<T> data, TokenType tokenType, Function<T, CodeSemantics> semantics, Function<T, Token> extractStartToken,
+            Function<T, Token> extractEndToken) {
+        data.collector().addToken(tokenType, semantics, data.entity(), extractStartToken, extractEndToken, data.variableRegistry());
     }
 
     abstract Token extractEnterToken(T entity);

@@ -52,6 +52,10 @@ public class ParsingException extends Exception {
         super(constructMessage(file, reason), cause);
     }
 
+    private ParsingException(String message) {
+        super(message);
+    }
+
     /**
      * Creates a new parsing exception which wraps the provided exceptions. If no exception to wrap is provided, null is
      * returned. If only one exception is provided, it is returned.
@@ -60,27 +64,24 @@ public class ParsingException extends Exception {
      * the provided exception if only one was provided.
      */
     public static ParsingException wrappingExceptions(Collection<ParsingException> exceptions) {
-        switch (exceptions.size()) {
-            case 0:
-                return null;
-            case 1:
-                return exceptions.iterator().next();
-            default: {
+        return switch (exceptions.size()) {
+            case 0 -> null;
+            case 1 -> exceptions.iterator().next();
+            default -> {
                 String message = exceptions.stream().map(ParsingException::getMessage).collect(Collectors.joining("\n"));
-                return new ParsingException(message);
+                yield new ParsingException(message);
             }
-        }
-    }
-
-    private ParsingException(String message) {
-        super(message);
+        };
     }
 
     private static String constructMessage(File file, String reason) {
         StringBuilder messageBuilder = new StringBuilder();
-        messageBuilder.append("failed to parse '%s'".formatted(file));
+        String fileName = file == null ? "<null>" : file.toString();
+        if (reason == null || !reason.contains(fileName)) {
+            messageBuilder.append("failed to parse '%s'".formatted(fileName));
+        }
         if (reason != null && !reason.isBlank()) {
-            messageBuilder.append(" with reason: %s".formatted(reason));
+            messageBuilder.append(reason);
         }
         return messageBuilder.toString();
     }

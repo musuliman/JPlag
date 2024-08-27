@@ -8,7 +8,7 @@ import de.jplag.Token;
 import de.jplag.semantics.CodeSemantics;
 
 /**
- * Models statements, which are the nodes of the normalization graph.
+ * Models statements, which are the nodes of the normalization graph. A statement refers to one or more tokens.
  */
 class Statement implements Comparable<Statement> {
 
@@ -16,6 +16,11 @@ class Statement implements Comparable<Statement> {
     private final int lineNumber;
     private final CodeSemantics semantics;
 
+    /**
+     * Constructs a new Statement.
+     * @param tokens the list of tokens that represent this statement.
+     * @param lineNumber the line number where this statement occurs in the source code.
+     */
     Statement(List<Token> tokens, int lineNumber) {
         this.tokens = Collections.unmodifiableList(tokens);
         this.lineNumber = lineNumber;
@@ -30,8 +35,8 @@ class Statement implements Comparable<Statement> {
         return semantics;
     }
 
-    void markKeep() {
-        semantics.markKeep();
+    void markAsCritical() {
+        semantics.markAsCritical();
     }
 
     private int tokenOrdinal(Token token) {
@@ -41,24 +46,28 @@ class Statement implements Comparable<Statement> {
     @Override
     public int compareTo(Statement other) {
         int sizeComp = Integer.compare(this.tokens.size(), other.tokens.size());
-        if (sizeComp != 0)
+        if (sizeComp != 0) {
             return -sizeComp; // bigger size should come first
+        }
         Iterator<Token> myTokens = this.tokens.iterator();
         Iterator<Token> otherTokens = other.tokens.iterator();
         for (int i = 0; i < this.tokens.size(); i++) {
             int tokenComp = Integer.compare(tokenOrdinal(myTokens.next()), tokenOrdinal(otherTokens.next()));
-            if (tokenComp != 0)
+            if (tokenComp != 0) {
                 return tokenComp;
+            }
         }
         return 0;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null || getClass() != obj.getClass())
+        }
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
+        }
         return tokens.equals(((Statement) obj).tokens);
     }
 

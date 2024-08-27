@@ -3,45 +3,63 @@
 -->
 <template>
   <Interactable class="mx-2 !shadow print:!mx-0 print:!border-0 print:!p-0">
-    <div @click="collapsed = !collapsed" class="text-center font-bold print:whitespace-pre-wrap">
-      {{ getFileDisplayName(file) }}
+    <div @click="collapsed = !collapsed" class="flex px-2 font-bold print:whitespace-pre-wrap">
+      <ToolTipComponent direction="right" v-if="getFileDisplayName(file) != file.fileName">
+        <template #default
+          ><span>{{ getFileDisplayName(file) }}</span></template
+        >
+        <template #tooltip
+          ><p class="whitespace max-w-[22rem] text-sm font-normal">
+            {{ file.fileName }}
+          </p></template
+        >
+      </ToolTipComponent>
+      <span v-else>{{ file.fileName }}</span>
+
+      <span class="flex-1"></span>
+
+      <ToolTipComponent direction="left" class="font-normal">
+        <template #default
+          ><span class="text-gray-600 dark:text-gray-300"
+            >{{ Math.round((file.matchedTokenCount / (file.tokenCount - 1)) * 100) }}%</span
+          ></template
+        >
+        <template #tooltip
+          ><p class="whitespace-nowrap text-sm">
+            The file has {{ file.tokenCount - 1 }} tokens. {{ file.matchedTokenCount }} are part of
+            a match.
+          </p></template
+        >
+      </ToolTipComponent>
     </div>
 
-    <div class="mx-1 overflow-x-auto print:!mx-0">
+    <div class="mx-1 overflow-x-auto print:!mx-0 print:overflow-x-hidden">
       <div class="print:display-initial w-fit min-w-full !text-xs" :class="{ hidden: collapsed }">
-        <table
+        <div
           v-if="file.data.trim() !== ''"
-          class="w-full"
-          :aria-describedby="`Content of file ${file.fileName}`"
+          class="grid w-full grid-cols-[auto_1fr] gap-x-2 print:table-auto"
         >
+          <div
+            v-for="(_, index) in codeLines"
+            :key="index"
+            class="col-span-1 col-start-1 row-span-1 text-right"
+            ref="lineRefs"
+            :style="{
+              gridRowStart: index + 1
+            }"
+          >
+            {{ index + 1 }}
+          </div>
           <!-- One row in table per code line -->
-          <tr
+          <CodeLine
             v-for="(line, index) in codeLines"
             :key="index"
-            class="w-full cursor-default"
-            :class="{ 'cursor-pointer': line.match !== null }"
-            @click="lineSelected(index)"
-          >
-            <!-- Line number -->
-            <td class="float-right pr-3">{{ index + 1 }}</td>
-            <!-- Code line -->
-            <td
-              class="print-excact w-full"
-              :style="{
-                background:
-                  line.match !== null
-                    ? getMatchColor(0.3, line.match.colorIndex)
-                    : 'hsla(0, 0%, 0%, 0)'
-              }"
-            >
-              <pre
-                v-html="line.line"
-                class="code-font print-excact whitespace-pre-wrap !bg-transparent"
-                ref="lineRefs"
-              ></pre>
-            </td>
-          </tr>
-        </table>
+            :line="line.line"
+            :lineNumber="index + 1"
+            :matches="line.matches"
+            @matchSelected="(match: Match) => matchSelected(match)"
+          />
+        </div>
 
         <div v-else class="flex flex-col items-start overflow-x-auto">
           <i>Empty File</i>
@@ -53,13 +71,15 @@
 
 <script setup lang="ts">
 import type { MatchInSingleFile } from '@/model/MatchInSingleFile'
-import { ref, nextTick, type PropType, computed, type Ref } from 'vue'
+import { ref, type PropType, computed, type Ref } from 'vue'
 import Interactable from '../InteractableComponent.vue'
-import type { Match } from '@/model/Match'
-import type { SubmissionFile } from '@/stores/state'
+import type { SubmissionFile } from '@/model/File'
 import { highlight } from '@/utils/CodeHighlighter'
-import type { ParserLanguage } from '@/model/Language'
-import { getMatchColor } from '@/utils/ColorUtils'
+import type { Language } from '@/model/Language'
+import ToolTipComponent from '../ToolTipComponent.vue'
+import CodeLine from './CodeLine.vue'
+import type { Match } from '@/model/Match'
+import type { BaseCodeMatch } from '@/model/BaseCodeReport'
 
 const props = defineProps({
   /**
@@ -76,44 +96,37 @@ const props = defineProps({
     type: Array<MatchInSingleFile>,
     required: true
   },
+  baseCodeMatches: {
+    type: Array<BaseCodeMatch>,
+    required: true
+  },
   /**
    * Language of the file.
    */
   highlightLanguage: {
-    type: String as PropType<ParserLanguage>,
+    type: String as PropType<Language>,
     required: true
   }
 })
 
-const emit = defineEmits(['lineSelected'])
+const emit = defineEmits(['matchSelected'])
 
 const collapsed = ref(true)
 const lineRefs = ref<HTMLElement[]>([])
 
-const codeLines: Ref<{ line: string; match: null | Match }[]> = computed(() =>
+const codeLines: Ref<{ line: string; matches: MatchInSingleFile[] }[]> = computed(() =>
   highlight(props.file.data, props.highlightLanguage).map((line, index) => {
-    return {
-      line,
-      match: props.matches?.find((m) => m.start <= index + 1 && index + 1 <= m.end)?.match ?? null
-    }
+    const matches = props.matches.filter((m) => m.start <= index + 1 && index + 1 <= m.end)
+    const baseCodeMatches = props.baseCodeMatches.filter(
+      (m) => m.start <= index + 1 && index + 1 <= m.end
+    )
+    matches.push(...baseCodeMatches)
+    return { line, matches }
   })
 )
 
-function lineSelected(lineIndex: number) {
-  if (codeLines.value[lineIndex].match !== null) {
-    emit('lineSelected', codeLines.value[lineIndex].match)
-  }
-}
-
-/**
- * Scrolls to the line number in the file.
- * @param lineNumber line number in the file
- */
-function scrollTo(lineNumber: number) {
-  collapsed.value = false
-  nextTick(function () {
-    lineRefs.value[lineNumber - 1].scrollIntoView({ block: 'center' })
-  })
+function matchSelected(match: Match) {
+  emit('matchSelected', match)
 }
 
 /**
@@ -123,9 +136,19 @@ function collapse() {
   collapsed.value = true
 }
 
+function expand() {
+  console.log('expand')
+  collapsed.value = false
+}
+
+function getLineRect(lineNumber: number): DOMRect {
+  return lineRefs.value[lineNumber - 1].getBoundingClientRect()
+}
+
 defineExpose({
-  scrollTo,
-  collapse
+  collapse,
+  expand,
+  getLineRect
 })
 
 /**
@@ -134,15 +157,10 @@ defineExpose({
  * @return new path of file
  */
 function getFileDisplayName(file: SubmissionFile): string {
-  const filePathLength = file.fileName.length
+  const fileDisplayName = file.displayFileName ?? file.fileName
+  const filePathLength = fileDisplayName.length
   return filePathLength > 40
-    ? '...' + file.fileName.substring(filePathLength - 40, filePathLength)
-    : file.fileName
+    ? '...' + fileDisplayName.substring(filePathLength - 40, filePathLength)
+    : fileDisplayName
 }
 </script>
-
-<style scoped>
-.code-font {
-  font-family: 'JetBrains Mono NL', monospace !important;
-}
-</style>

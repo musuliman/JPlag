@@ -11,7 +11,7 @@ export default {
           light: '#000000',
           dark: '#ffffff'
         },
-        backgorund: {
+        background: {
           light: 'hsl(0, 0%, 97%)',
           dark: 'hsl(180, 80%, 3%)'
         },
@@ -36,7 +36,7 @@ export default {
           }
         },
         scrollbar: {
-          backgorund: {
+          background: {
             light: colors.slate[100],
             dark: '#30363D'
           },
@@ -53,7 +53,8 @@ export default {
           DEFAULT: '#0070f3',
           dark: '#00c'
         },
-        error: '#dc322f'
+        error: '#dc322f',
+        tooltip: 'rgba(0,0,0,0.8)'
       },
       borderWidth: {
         1: '1px'

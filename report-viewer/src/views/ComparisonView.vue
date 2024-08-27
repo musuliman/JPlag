@@ -23,22 +23,69 @@
             </template>
           </ToolTipComponent>
         </h2>
-        <div class="flex flex-row">
-          <TextInformation label="Average Similarity"
+        <div class="flex flex-row space-x-10">
+          <TextInformation label="Average Similarity" class="font-bold"
             >{{ (comparison.similarities[MetricType.AVERAGE] * 100).toFixed(2) }}%</TextInformation
+          >
+          <TextInformation
+            :label="`Similarity ${store().getDisplayName(comparison.firstSubmissionId)}`"
+            tooltip-side="right"
+          >
+            <template #default>{{ (comparison.firstSimilarity * 100).toFixed(2) }}%</template>
+            <template #tooltip
+              ><div class="whitespace-pre text-sm">
+                <p>
+                  Percentage of code from
+                  {{ store().getDisplayName(comparison.firstSubmissionId) }} that was found in the
+                  code of {{ store().getDisplayName(comparison.secondSubmissionId) }}.
+                </p>
+                <p>
+                  The numbers might not be symmetric, due to the submissions having different
+                  lengths.
+                </p>
+              </div></template
+            >
+          </TextInformation>
+          <TextInformation
+            :label="`Similarity ${store().getDisplayName(comparison.secondSubmissionId)}`"
+            tooltip-side="right"
+            ><template #default>{{ (comparison.secondSimilarity * 100).toFixed(2) }}%</template>
+            <template #tooltip
+              ><div class="whitespace-pre text-sm">
+                <p>
+                  Percentage of code from
+                  {{ store().getDisplayName(comparison.secondSubmissionId) }} that was found in the
+                  code of {{ store().getDisplayName(comparison.firstSubmissionId) }}.
+                </p>
+                <p>
+                  The numbers might not be symmetric, due to the submissions having different
+                  lengths.
+                </p>
+              </div></template
+            ></TextInformation
           >
         </div>
         <MatchList
           :id1="firstId"
           :id2="secondId"
           :matches="comparison.allMatches"
+          :basecode-in-first="firstBaseCodeMatches"
+          :basecode-in-second="secondBaseCodeMatches"
           @match-selected="showMatch"
+        />
+        <OptionsSelectorComponent
+          class="mt-2"
+          ref="sortingOptionSelector"
+          title="File Sorting:"
+          :labels="sortingOptions.map((o) => fileSortingTooltips[o])"
+          @selectionChanged="(index: number) => changeFileSorting(index)"
+          :default-selected="sortingOptions.indexOf(store().uiState.fileSorting)"
         />
       </Container>
     </div>
     <div ref="styleholder"></div>
     <div
-      class="relative bottom-0 left-0 right-0 flex flex-grow justify-between space-x-5 p-5 pt-5 print:space-x-1 print:p-0 print:!pt-2"
+      class="relative bottom-0 left-0 right-0 flex flex-grow justify-between space-x-5 px-5 pb-7 pt-5 print:space-x-1 print:p-0 print:!pt-2"
     >
       <FilesContainer
         ref="panel1"
@@ -46,7 +93,9 @@
         :matches="comparison.matchesInFirstSubmission"
         :file-owner-display-name="store().getDisplayName(comparison.firstSubmissionId)"
         :highlight-language="language"
-        @line-selected="showMatchInSecond"
+        :base-code-matches="firstBaseCodeMatches"
+        @match-selected="showMatchInSecond"
+        @files-moved="filesMoved()"
         class="max-h-0 min-h-full flex-1 overflow-hidden print:max-h-none print:overflow-y-visible"
       />
       <FilesContainer
@@ -55,7 +104,9 @@
         :matches="comparison.matchesInSecondSubmissions"
         :file-owner-display-name="store().getDisplayName(comparison.secondSubmissionId)"
         :highlight-language="language"
-        @line-selected="showMatchInFirst"
+        :base-code-matches="secondBaseCodeMatches"
+        @match-selected="showMatchInFirst"
+        @files-moved="filesMoved()"
         class="max-h-0 min-h-full flex-1 overflow-hidden print:max-h-none print:overflow-y-visible"
       />
     </div>
@@ -74,35 +125,40 @@ import MatchList from '@/components/fileDisplaying/MatchList.vue'
 import FilesContainer from '@/components/fileDisplaying/FilesContainer.vue'
 import { store } from '@/stores/store'
 import Container from '@/components/ContainerComponent.vue'
-import { ParserLanguage } from '@/model/Language'
+import type { Language } from '@/model/Language'
 import hljsLightMode from 'highlight.js/styles/vs.css?raw'
 import hljsDarkMode from 'highlight.js/styles/vs2015.css?raw'
 import { MetricType } from '@/model/MetricType'
 import { Comparison } from '@/model/Comparison'
 import { redirectOnError } from '@/router'
 import ToolTipComponent from '@/components/ToolTipComponent.vue'
+import { FileSortingOptions, fileSortingTooltips } from '@/model/ui/FileSortingOptions'
+import OptionsSelectorComponent from '@/components/optionsSelectors/OptionsSelectorComponent.vue'
+import type { BaseCodeMatch } from '@/model/BaseCodeReport'
 
 library.add(faPrint)
 
 const props = defineProps({
-  firstId: {
-    type: String,
-    required: true
-  },
-  secondId: {
-    type: String,
-    required: true
-  },
   comparison: {
     type: Object as PropType<Comparison>,
     required: true
   },
   language: {
-    type: Object as PropType<ParserLanguage>,
+    type: String as PropType<Language>,
+    required: true
+  },
+  firstBaseCodeMatches: {
+    type: Array as PropType<BaseCodeMatch[]>,
+    required: true
+  },
+  secondBaseCodeMatches: {
+    type: Array as PropType<BaseCodeMatch[]>,
     required: true
   }
 })
 
+const firstId = computed(() => props.comparison.firstSubmissionId)
+const secondId = computed(() => props.comparison.secondSubmissionId)
 const filesOfFirst = computed(() => props.comparison.filesOfFirstSubmission)
 const filesOfSecond = computed(() => props.comparison.filesOfSecondSubmission)
 
@@ -110,26 +166,23 @@ const panel1: Ref<typeof FilesContainer | null> = ref(null)
 const panel2: Ref<typeof FilesContainer | null> = ref(null)
 
 /**
- * Shows a match in the first files container when clicked on a line in the second files container.
- * @param file (file name)
- * @param line (line number)
+ * Shows a match in the first files container when clicked on a line in the second file container.
+ * @param match The match to scroll to
  */
 function showMatchInFirst(match: Match) {
-  panel1.value?.scrollTo(match.firstFile, match.startInFirst)
+  panel1.value?.scrollTo(match.firstFile, match.startInFirst.line)
 }
 
 /**
- * Shows a match in the second files container, when clicked on a line in the second files container.
- * @param file (file name)
- * @param line (line number)
+ * Shows a match in the second files container, when clicked on a line in the second file container.
+ * @param match The match to scroll to
  */
 function showMatchInSecond(match: Match) {
-  panel2.value?.scrollTo(match.secondFile, match.startInSecond)
+  panel2.value?.scrollTo(match.secondFile, match.startInSecond.line)
 }
 
 /**
  * Shows a match in the first and second files container.
- * @param e The click event
  * @param match The match to show
  */
 function showMatch(match: Match) {
@@ -137,12 +190,38 @@ function showMatch(match: Match) {
   showMatchInSecond(match)
 }
 
+const sortingOptions = [
+  FileSortingOptions.ALPHABETICAL,
+  FileSortingOptions.MATCH_COVERAGE,
+  FileSortingOptions.MATCH_COUNT,
+  FileSortingOptions.MATCH_SIZE
+]
+const movedAfterSorting = ref(false)
+const sortingOptionSelector: Ref<typeof OptionsSelectorComponent | null> = ref(null)
+
+function changeFileSorting(index: number) {
+  movedAfterSorting.value = false
+  if (index < 0) {
+    return
+  }
+  store().uiState.fileSorting = sortingOptions[index]
+  panel1.value?.sortFiles(store().uiState.fileSorting)
+  panel2.value?.sortFiles(store().uiState.fileSorting)
+}
+
+function filesMoved() {
+  movedAfterSorting.value = true
+  if (sortingOptionSelector.value) {
+    sortingOptionSelector.value.select(-2)
+  }
+}
+
 function print() {
   window.print()
 }
 
 // This code is responsible for changing the theme of the highlighted code depending on light/dark mode
-// Changing the used style itsself is the desired solution (https://github.com/highlightjs/highlight.js/issues/2115)
+// Changing the used style itself is the desired solution (https://github.com/highlightjs/highlight.js/issues/2115)
 const styleholder: Ref<Node | null> = ref(null)
 
 onMounted(() => {

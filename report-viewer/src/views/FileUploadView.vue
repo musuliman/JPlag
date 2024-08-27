@@ -11,12 +11,16 @@
       <div>
         <img
           class="mx-auto mt-8 h-auto w-60"
+          height="168"
+          width="240"
           src="@/assets/jplag-light-transparent.png"
           alt="JPlag Logo"
           v-if="store().uiState.useDarkMode"
         />
         <img
           class="mx-auto mt-8 h-auto w-60"
+          height="168"
+          width="240"
           src="@/assets/jplag-dark-transparent.png"
           alt="JPlag Logo"
           v-else
@@ -32,7 +36,7 @@
           <div>Or click here to select a file</div>
         </div>
         <div>(No files will be uploaded)</div>
-        <Button class="mx-auto mt-8 w-fit" @click="continueWithLocal" v-if="localFiles !== 'none'">
+        <Button class="mx-auto mt-8 w-fit" @click="continueWithLocal" v-if="localFiles">
           Continue with local files
         </Button>
       </div>
@@ -45,7 +49,7 @@
         <p>For more details check the console.</p>
       </div>
     </div>
-    <VersionInfoComponent class="absolute bottom-3 left-3" />
+    <VersionInfoComponent class="absolute bottom-5 left-5" />
   </div>
 </template>
 
@@ -57,30 +61,30 @@ import { store } from '@/stores/store'
 import Button from '@/components/ButtonComponent.vue'
 import VersionInfoComponent from '@/components/VersionInfoComponent.vue'
 import LoadingCircle from '@/components/LoadingCircle.vue'
-import { JsonFileHandler } from '@/utils/fileHandling/JsonFileHandler'
-import { ZipFileHandler } from '@/utils/fileHandling/ZipFileHandler'
+import { ZipFileHandler } from '@/model/fileHandling/ZipFileHandler'
+import { JsonFileHandler } from '@/model/fileHandling/JsonFileHandler'
+import { BaseFactory } from '@/model/factories/BaseFactory'
 
 store().clearStore()
 
 const exampleFiles = ref(import.meta.env.MODE == 'demo')
-const localFiles: Ref<'json' | 'zip' | 'none'> = ref('none')
+const localFiles = ref(false)
 // Checks whether local files exist
-fetch('/files/overview.json')
-  .then((response) => {
-    if (response.status == 200) {
-      localFiles.value = 'json'
-    }
-  })
-  .catch(() => {})
-fetch('/results.zip')
-  .then((response) => {
-    if (response.status == 200) {
-      localFiles.value = 'zip'
-    }
+BaseFactory.getLocalFile('files/overview.json')
+  .then(() => {
+    localFiles.value = true
   })
   .catch(() => {})
 
+BaseFactory.useLocalZipMode().then((value) => {
+  if (value) {
+    store().state.uploadedFileName = BaseFactory.zipFileName
+    navigateToOverview()
+  }
+})
+
 document.title = 'JPlag Report Viewer'
+
 const loadingFiles = ref(false)
 type fileMethod = 'query' | 'local' | 'upload' | 'unknown'
 const errors: Ref<{ error: Error; source: fileMethod }[]> = ref([])
@@ -118,11 +122,7 @@ async function handleJsonFile(file: Blob) {
     registerError(e as Error, 'upload')
     return
   }
-  store().setLoadingType({
-    local: false,
-    zip: false,
-    single: true
-  })
+  store().setLoadingType('single')
   navigateToOverview()
 }
 
@@ -137,11 +137,7 @@ async function handleFile(file: Blob) {
     case 'application/zip-compressed':
     case 'application/x-zip-compressed':
     case 'application/x-zip':
-      store().setLoadingType({
-        local: false,
-        zip: true,
-        single: false
-      })
+      store().setLoadingType('zip')
       await new ZipFileHandler().handleFile(file)
       return navigateToOverview()
     case 'application/json':
@@ -208,12 +204,8 @@ async function loadQueryFile(url: URL) {
  * Handles click on Continue with local files.
  */
 function continueWithLocal() {
-  store().state.uploadedFileName = exampleFiles.value ? 'progpedia.zip' : 'results.zip'
-  store().setLoadingType({
-    local: true,
-    zip: localFiles.value === 'zip',
-    single: false
-  })
+  store().state.uploadedFileName = exampleFiles.value ? 'progpedia.zip' : BaseFactory.zipFileName
+  store().setLoadingType('local')
   navigateToOverview()
 }
 

@@ -2,12 +2,13 @@ import { test, expect, Page } from '@playwright/test'
 import { uploadFile } from './TestUtils'
 
 test('Test distribution diagram', async ({ page }) => {
+  test.slow()
   await page.goto('/')
 
-  await uploadFile('result_small_cluster.zip', page)
+  await uploadFile('progpedia-report.zip', page)
 
   const options = getTestCombinations()
-  selectOptions(page, options[0])
+  await selectOptions(page, options[0])
   const canvas = page.locator('canvas').first()
   let lastImage = await canvas.screenshot()
   for (const option of options.slice(1)) {
@@ -26,23 +27,24 @@ test('Test distribution diagram', async ({ page }) => {
 async function selectOptions(page: Page, options: string[]) {
   const distributionDiagramContainer = page.getByText('Distribution of Comparisons:Options:')
   for (const option of options) {
-    await distributionDiagramContainer.getByText(option).first().click()
+    await distributionDiagramContainer.getByText(option, { exact: true }).click()
   }
   // This timeout is so that the screenshot is taken after the animation is finished
-  await page.waitForTimeout(3000)
+  await page.waitForTimeout(100)
 }
 
 function getTestCombinations() {
   const options = [
-    ['Average', 'Maximum'],
-    ['Linear', 'Logarithmic']
+    ['Average Similarity', 'Maximum Similarity'],
+    ['Linear', 'Logarithmic'],
+    ['10', '20', '25', '50', '100']
   ]
 
-  const combinations: string[][] = []
-
   const baseOptions = options.map((o) => o[0])
+  const combinations: string[][] = [baseOptions]
+
   for (let i = 0; i < options.length; i++) {
-    for (let j = 0; j < options[i].length; j++) {
+    for (let j = 1; j < options[i].length; j++) {
       const combination = Array.from(baseOptions)
       combination[i] = options[i][j]
       combinations.push(combination)

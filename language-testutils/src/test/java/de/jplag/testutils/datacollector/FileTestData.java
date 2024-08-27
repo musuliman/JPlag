@@ -17,7 +17,7 @@ import de.jplag.util.FileUtils;
 class FileTestData implements TestData {
     private final File file;
 
-    public FileTestData(File file) {
+    FileTestData(File file) {
         this.file = file;
     }
 
@@ -38,10 +38,12 @@ class FileTestData implements TestData {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         FileTestData that = (FileTestData) o;
         return Objects.equals(file, that.file);
     }

@@ -32,9 +32,7 @@ class SubsequenceHashLookupTable {
      * @param marked Which values are marked. Subsequences containing a marked value obtain the {@link #NO_HASH} value.
      */
     SubsequenceHashLookupTable(int windowSize, int[] values, boolean[] marked) {
-        windowSize = Math.max(1, windowSize);
-        windowSize = Math.min(MAX_HASH_LENGTH, windowSize);
-        this.windowSize = windowSize;
+        this.windowSize = Math.clamp(windowSize, 1, MAX_HASH_LENGTH);
         this.values = values;
 
         if (values.length < windowSize) {
@@ -44,16 +42,6 @@ class SubsequenceHashLookupTable {
         subsequenceHashes = new int[values.length - windowSize];
         startIndexToSubsequenceHashesMap = new HashMap<>(subsequenceHashes.length);
         computeSubsequenceHashes(marked);
-    }
-
-    /** Returns the size of the subsequences used for hashing */
-    int getWindowSize() {
-        return windowSize;
-    }
-
-    /** Returns the list of values for which the hashes were computed */
-    int[] getValues() {
-        return values;
     }
 
     /**

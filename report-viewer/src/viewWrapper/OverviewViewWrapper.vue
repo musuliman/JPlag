@@ -1,10 +1,14 @@
 <template>
-  <OverviewView v-if="overview" :overview="overview" />
-  <div
-    v-else
-    class="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center"
-  >
-    <LoadingCircle class="mx-auto" />
+  <div>
+    <OverviewView v-if="overview" :overview="overview" />
+    <div
+      v-else
+      class="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center"
+    >
+      <LoadingCircle class="mx-auto" />
+    </div>
+
+    <VersionRepositoryReference />
   </div>
 </template>
 
@@ -15,6 +19,7 @@ import OverviewView from '@/views/OverviewView.vue'
 import type { Overview } from '@/model/Overview'
 import LoadingCircle from '@/components/LoadingCircle.vue'
 import { redirectOnError } from '@/router'
+import VersionRepositoryReference from '@/components/VersionRepositoryReference.vue'
 
 const overview: Ref<Overview | null> = ref(null)
 

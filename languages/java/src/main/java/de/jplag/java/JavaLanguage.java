@@ -15,7 +15,6 @@ import de.jplag.Token;
 @MetaInfServices(de.jplag.Language.class)
 public class JavaLanguage implements de.jplag.Language {
     private static final String IDENTIFIER = "java";
-    public static final int JAVA_VERSION = 21;
 
     private final Parser parser;
 
@@ -44,12 +43,17 @@ public class JavaLanguage implements de.jplag.Language {
     }
 
     @Override
-    public List<Token> parse(Set<File> files) throws ParsingException {
+    public List<Token> parse(Set<File> files, boolean normalize) throws ParsingException {
         return this.parser.parse(files);
     }
 
     @Override
     public boolean tokensHaveSemantics() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsNormalization() {
         return true;
     }
 

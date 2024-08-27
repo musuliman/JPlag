@@ -10,9 +10,13 @@ import de.jplag.Token;
  */
 class StatementBuilder {
 
-    private List<Token> tokens;
+    private final List<Token> tokens;
     private final int lineNumber;
 
+    /**
+     * Constructs a new StatementBuilder.
+     * @param lineNumber the line number where the statement starts in the source code.
+     */
     StatementBuilder(int lineNumber) {
         this.lineNumber = lineNumber;
         this.tokens = new ArrayList<>();

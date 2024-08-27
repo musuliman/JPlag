@@ -1,22 +1,22 @@
-import { ParserLanguage } from '@/model/Language'
+import { type Language, ParserLanguage } from '@/model/Language'
 import hljs from 'highlight.js'
 import scheme from 'highlight.js/lib/languages/scheme'
 import llvm from 'highlight.js/lib/languages/llvm'
 import typescript from 'highlight.js/lib/languages/typescript'
 
 /**
- * Hightlights the given code with the given language.
- * Splits the resulting html into seperate lines.
+ * Highlights the given code with the given language.
+ * Splits the resulting html into separate lines.
  * The returned string is an array of html lines, consisting of spans with the hljs classes and the code.
  * Source: https://stackoverflow.com/a/70656181
  * @param code Code to highlight
  * @param lang Language to highlight the code with
  * @returns
  */
-export function highlight(code: string, lang: ParserLanguage) {
+export function highlight(code: string, lang: Language) {
   const highlightedCode = hljs.highlight(code, { language: getHighlightLanguage(lang) }).value
   const openTags: string[] = []
-  const formattedCode = highlightedCode
+  return highlightedCode
     .replace(/(<span [^>]*>)|(<\/span>)|(\n)/g, (match: string) => {
       if (match === '\n') {
         return '</span>'.repeat(openTags.length) + '\n' + openTags.join('')
@@ -31,15 +31,15 @@ export function highlight(code: string, lang: ParserLanguage) {
       return match
     })
     .split('\n')
-  return formattedCode
 }
 
-function getHighlightLanguage(lang: ParserLanguage) {
+function getHighlightLanguage(lang: Language) {
   switch (lang) {
     case ParserLanguage.PYTHON:
       return 'python'
+    case ParserLanguage.C:
+      return 'c'
     case ParserLanguage.CPP:
-    case ParserLanguage.CPP2:
       return 'cpp'
     case ParserLanguage.C_SHARP:
       return 'csharp'

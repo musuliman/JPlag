@@ -1,10 +1,8 @@
 package de.jplag.merging;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import de.jplag.JPlagComparison;
 import de.jplag.JPlagResult;
@@ -12,6 +10,8 @@ import de.jplag.Match;
 import de.jplag.SharedTokenType;
 import de.jplag.Submission;
 import de.jplag.Token;
+import de.jplag.logging.ProgressBarLogger;
+import de.jplag.logging.ProgressBarType;
 import de.jplag.options.JPlagOptions;
 
 /**
@@ -24,7 +24,7 @@ import de.jplag.options.JPlagOptions;
  * {@link JPlagOptions} as {@link MergingOptions} and default to (2,6).
  */
 public class MatchMerging {
-    private JPlagOptions options;
+    private final JPlagOptions options;
 
     /**
      * Instantiates the match merging algorithm for a comparison result and a set of specific options.
@@ -46,7 +46,7 @@ public class MatchMerging {
         List<JPlagComparison> comparisons = new ArrayList<>(result.getAllComparisons());
         List<JPlagComparison> comparisonsMerged = new ArrayList<>();
 
-        for (JPlagComparison comparison : comparisons) {
+        ProgressBarLogger.iterate(ProgressBarType.MATCH_MERGING, comparisons, comparison -> {
             Submission leftSubmission = comparison.firstSubmission().copy();
             Submission rightSubmission = comparison.secondSubmission().copy();
             List<Match> globalMatches = new ArrayList<>(comparison.matches());
@@ -54,7 +54,7 @@ public class MatchMerging {
             globalMatches = mergeNeighbors(globalMatches, leftSubmission, rightSubmission);
             globalMatches = globalMatches.stream().filter(it -> it.length() >= options.minimumTokenMatch()).toList();
             comparisonsMerged.add(new JPlagComparison(leftSubmission, rightSubmission, globalMatches, new ArrayList<>()));
-        }
+        });
 
         long durationInMillis = System.currentTimeMillis() - timeBeforeStartInMillis;
         return new JPlagResult(comparisonsMerged, result.getSubmissions(), result.getDuration() + durationInMillis, options);
@@ -68,25 +68,15 @@ public class MatchMerging {
      */
     private List<Neighbor> computeNeighbors(List<Match> globalMatches) {
         List<Neighbor> neighbors = new ArrayList<>();
+        List<Match> sortedByLeft = new ArrayList<>(globalMatches);
+        List<Match> sortedByRight = new ArrayList<>(globalMatches);
 
-        Map<Integer, List<Match>> matchesByLeft = new HashMap<>();
-        Map<Integer, List<Match>> matchesByRight = new HashMap<>();
+        sortedByLeft.sort(Comparator.comparingInt(Match::startOfFirst));
+        sortedByRight.sort(Comparator.comparingInt(Match::startOfSecond));
 
-        // Group matches by their left and right positions
-        for (Match match : globalMatches) {
-            matchesByLeft.computeIfAbsent(match.startOfFirst(), key -> new ArrayList<>()).add(match);
-            matchesByRight.computeIfAbsent(match.startOfSecond(), key -> new ArrayList<>()).add(match);
-        }
-
-        // Iterate through the matches and find neighbors
-        for (List<Match> matches : matchesByLeft.values()) {
-            for (Match match : matches) {
-                List<Match> rightMatches = matchesByRight.getOrDefault(match.startOfSecond(), Collections.emptyList());
-                for (Match rightMatch : rightMatches) {
-                    if (rightMatch != match) {
-                        neighbors.add(new Neighbor(match, rightMatch));
-                    }
-                }
+        for (int i = 0; i < sortedByLeft.size() - 1; i++) {
+            if (sortedByRight.indexOf(sortedByLeft.get(i)) == (sortedByRight.indexOf(sortedByLeft.get(i + 1)) - 1)) {
+                neighbors.add(new Neighbor(sortedByLeft.get(i), sortedByLeft.get(i + 1)));
             }
         }
 

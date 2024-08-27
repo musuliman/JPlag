@@ -1,9 +1,9 @@
 package de.jplag.reporting.jsonfactory;
 
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -14,6 +14,7 @@ import de.jplag.Submission;
 import de.jplag.Token;
 import de.jplag.options.SimilarityMetric;
 import de.jplag.reporting.FilePathUtil;
+import de.jplag.reporting.reportobject.model.CodePosition;
 import de.jplag.reporting.reportobject.model.ComparisonReport;
 import de.jplag.reporting.reportobject.model.Match;
 import de.jplag.reporting.reportobject.writer.JPlagResultWriter;
@@ -58,8 +59,8 @@ public class ComparisonReportWriter {
             addToLookUp(firstSubmissionId, secondSubmissionId, fileName);
             var comparisonReport = new ComparisonReport(firstSubmissionId, secondSubmissionId,
                     Map.of(SimilarityMetric.AVG.name(), comparison.similarity(), SimilarityMetric.MAX.name(), comparison.maximalSimilarity()),
-                    convertMatchesToReportMatches(comparison));
-            resultWriter.addJsonEntry(comparisonReport, fileName);
+                    convertMatchesToReportMatches(comparison), comparison.similarityOfFirst(), comparison.similarityOfSecond());
+            resultWriter.addJsonEntry(comparisonReport, Path.of(fileName));
         }
     }
 
@@ -98,20 +99,26 @@ public class ComparisonReportWriter {
         List<Token> tokensFirst = comparison.firstSubmission().getTokenList().subList(match.startOfFirst(), match.endOfFirst() + 1);
         List<Token> tokensSecond = comparison.secondSubmission().getTokenList().subList(match.startOfSecond(), match.endOfSecond() + 1);
 
-        Comparator<? super Token> lineComparator = Comparator.comparingInt(Token::getLine);
+        Comparator<? super Token> lineComparator = Comparator.comparingInt(Token::getLine).thenComparingInt(Token::getColumn);
 
         Token startOfFirst = tokensFirst.stream().min(lineComparator).orElseThrow();
         Token endOfFirst = tokensFirst.stream().max(lineComparator).orElseThrow();
         Token startOfSecond = tokensSecond.stream().min(lineComparator).orElseThrow();
         Token endOfSecond = tokensSecond.stream().max(lineComparator).orElseThrow();
 
-        List<Token> firstTotalTokens = tokensFirst.stream().filter(x -> Objects.equals(x.getFile(), startOfFirst.getFile())).toList();
-        List<Token> secondTotalTokens = tokensSecond.stream().filter(x -> Objects.equals(x.getFile(), startOfSecond.getFile())).toList();
+        String firstFileName = FilePathUtil.getRelativeSubmissionPath(startOfFirst.getFile(), comparison.firstSubmission(), submissionToIdFunction)
+                .toString();
+        String secondFileName = FilePathUtil.getRelativeSubmissionPath(startOfSecond.getFile(), comparison.secondSubmission(), submissionToIdFunction)
+                .toString();
 
-        return new Match(FilePathUtil.getRelativeSubmissionPath(startOfFirst.getFile(), comparison.firstSubmission(), submissionToIdFunction),
-                FilePathUtil.getRelativeSubmissionPath(startOfSecond.getFile(), comparison.secondSubmission(), submissionToIdFunction),
-                startOfFirst.getLine(), endOfFirst.getLine(), startOfSecond.getLine(), endOfSecond.getLine(), match.length(), firstTotalTokens.size(),
-                secondTotalTokens.size());
+        CodePosition startInFirst = new CodePosition(startOfFirst.getLine(), startOfFirst.getColumn() - 1, match.startOfFirst());
+        CodePosition endInFirst = new CodePosition(endOfFirst.getLine(), endOfFirst.getColumn() + endOfFirst.getLength() - 1, match.endOfFirst());
+
+        CodePosition startInSecond = new CodePosition(startOfSecond.getLine(), startOfSecond.getColumn() - 1, match.startOfSecond());
+        CodePosition endInSecond = new CodePosition(endOfSecond.getLine(), endOfSecond.getColumn() + endOfSecond.getLength() - 1,
+                match.endOfSecond());
+
+        return new Match(firstFileName, secondFileName, startInFirst, endInFirst, startInSecond, endInSecond, match.length());
     }
 
 }

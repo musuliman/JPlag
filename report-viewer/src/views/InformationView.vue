@@ -1,31 +1,12 @@
 <template>
   <div
-    class="absolute bottom-0 left-0 right-0 top-0 flex flex-row space-x-5 p-5 print:flex-col print:space-x-0 print:space-y-2 print:p-0"
+    class="absolute bottom-0 left-0 right-0 top-0 flex flex-row space-x-5 p-5 pb-7 print:flex-col print:space-x-0 print:space-y-2 print:p-0"
   >
     <Container class="infoContainer print:!border-none">
       <h2>Run Options:</h2>
 
       <ScrollableComponent class="flex-grow px-4 pt-2">
-        <div v-if="options == undefined">
-          <TextInformation label="Submission Directory" class="pb-1">{{
-            overview.submissionFolderPath.join(', ')
-          }}</TextInformation>
-          <TextInformation label="Basecode Directory" class="pb-1">{{
-            overview.baseCodeFolderPath
-          }}</TextInformation>
-          <TextInformation label="Language" class="pb-1">{{ overview.language }}</TextInformation>
-          <TextInformation label="File Extensions" class="pb-1">{{
-            overview.fileExtensions.join(', ')
-          }}</TextInformation>
-          <TextInformation label="Min Token Match" class="pb-1">{{
-            overview.matchSensitivity
-          }}</TextInformation>
-          <TextInformation label="Result File Name">{{
-            store().state.uploadedFileName
-          }}</TextInformation>
-        </div>
-
-        <div v-else class="space-y-2">
+        <div class="space-y-2">
           <TextInformation label="Language">{{ options.language }}</TextInformation>
           <TextInformation label="Min Token Match">{{ options.minTokenMatch }}</TextInformation>
           <TextInformation label="Submission Directories">{{
@@ -87,7 +68,7 @@
               }}</TextInformation>
             </div>
 
-            <TextInformation v-else label="Agglomerative Treshold">{{
+            <TextInformation v-else label="Agglomerative Threshold">{{
               options.clusterOptions.agglomerativeThreshold
             }}</TextInformation>
 
@@ -163,8 +144,7 @@ defineProps({
   },
   options: {
     type: Object as PropType<CliOptions>,
-    // @deprecated since 5.0.0. When pre 5.0.0 format is no longer supported this can be made required
-    required: false
+    required: true
   }
 })
 
