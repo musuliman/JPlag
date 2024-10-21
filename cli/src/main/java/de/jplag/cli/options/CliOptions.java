@@ -2,6 +2,8 @@ package de.jplag.cli.options;
 
 import java.io.File;
 
+import org.slf4j.event.Level;
+
 import de.jplag.Language;
 import de.jplag.clustering.ClusteringAlgorithm;
 import de.jplag.clustering.ClusteringOptions;
@@ -52,7 +54,7 @@ public class CliOptions implements Runnable {
     public String resultFile = "results";
 
     @Option(names = {"-M", "--mode"}, description = "The mode of JPlag. One of: ${COMPLETION-CANDIDATES} (default: ${DEFAULT_VALUE})")
-    public JPlagMode mode = JPlagMode.RUN;
+    public JPlagMode mode = JPlagMode.RUN_AND_VIEW;
 
     @Option(names = {"--normalize"}, description = "Activate the normalization of tokens. Supported for languages: Java, C++.")
     public boolean normalize = false;
@@ -101,6 +103,9 @@ public class CliOptions implements Runnable {
 
         @Option(names = "--overwrite", description = "Existing result files will be overwritten.")
         public boolean overwrite = false;
+
+        @Option(names = "--log-level", description = "Set the log level for the cli.")
+        public Level logLevel = Level.INFO;
     }
 
     public static class Clustering {

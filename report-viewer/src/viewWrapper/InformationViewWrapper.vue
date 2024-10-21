@@ -1,6 +1,6 @@
 <template>
   <div>
-    <InformationView v-if="overview" :overview="overview" :options="cliOptions" />
+    <InformationView v-if="overview && cliOptions" :overview="overview" :options="cliOptions" />
     <div
       v-else
       class="absolute bottom-0 left-0 right-0 top-0 flex flex-col items-center justify-center"
@@ -8,7 +8,7 @@
       <LoadingCircle class="mx-auto" />
     </div>
 
-    <RepositoryReference />
+    <VersionRepositoryReference />
   </div>
 </template>
 
@@ -21,7 +21,7 @@ import LoadingCircle from '@/components/LoadingCircle.vue'
 import { redirectOnError } from '@/router'
 import { OptionsFactory } from '@/model/factories/OptionsFactory'
 import type { CliOptions } from '@/model/CliOptions'
-import RepositoryReference from '@/components/RepositoryReference.vue'
+import VersionRepositoryReference from '@/components/VersionRepositoryReference.vue'
 
 const overview: Ref<Overview | null> = ref(null)
 const cliOptions: Ref<CliOptions | undefined> = ref(undefined)
@@ -36,5 +36,5 @@ OverviewFactory.getOverview()
 
 OptionsFactory.getCliOptions()
   .then((o) => (cliOptions.value = o))
-  .catch((error) => console.log('Could not load full options.', error))
+  .catch((error) => console.error('Could not load full options.', error))
 </script>
